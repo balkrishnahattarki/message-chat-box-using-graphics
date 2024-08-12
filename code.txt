@@ -1,0 +1,170 @@
+#include <graphics.h>
+#include <stdio.h>
+#include <conio.h>
+#include <string.h>
+
+#define MAX_CHARS 100
+#define MAX_MESSAGES 10
+
+struct Message {
+    char text[MAX_CHARS + 1];
+    int x, y; // Coordinates for displaying the message
+};
+
+void drawMessageBox() {
+    // Draw main message box with gradient
+    for (int i = 30; i < 450; i++) {
+        setcolor(COLOR(i / 2, i / 3, 255 - i / 3));
+        line(30, i, 630, i);
+    }
+    rectangle(30, 30, 630, 450); 
+
+    // Draw input box
+    setcolor(WHITE);
+    rectangle(30, 455, 430, 485); 
+
+    // Draw Send button with gradient
+    for (int i = 455; i < 485; i++) {
+        setcolor(COLOR(0, 255 - i / 2, 0));
+        line(450, i, 610, i);
+    }
+    rectangle(450, 455, 610, 485); 
+
+    // Draw Clear button with gradient
+    for (int i = 495; i < 525; i++) {
+        setcolor(COLOR(255 - i / 2, 0, 0));
+        line(450, i, 610, i);
+    }
+    rectangle(450, 495, 610, 525);
+
+    // Fill input box with white
+    setfillstyle(SOLID_FILL, WHITE);
+    floodfill(31, 456, WHITE);
+
+    // Draw labels
+    settextstyle(DEFAULT_FONT, HORIZ_DIR, 2);
+    setcolor(WHITE);
+    outtextxy(460, 460, "Send");
+    outtextxy(460, 500, "Clear");
+
+    settextstyle(DEFAULT_FONT, HORIZ_DIR, 1);
+    setcolor(BLACK);
+    outtextxy(50, 460, "Type message here:");
+}
+
+void displayMessages(struct Message messages[], int count) {
+    setcolor(BLACK);
+    setbkcolor(LIGHTGRAY);
+    settextstyle(DEFAULT_FONT, HORIZ_DIR, 2);
+    for (int i = 0; i < count; ++i) {
+        outtextxy(messages[i].x, messages[i].y, messages[i].text);
+    }
+}
+
+void clearInputBox() {
+    setfillstyle(SOLID_FILL, WHITE);
+    bar(190, 460, 430, 485); // Clear the input box area
+}
+
+int main() {
+    int gd = DETECT, gm;
+    initgraph(&gd, &gm, "");
+
+    struct Message messages[MAX_MESSAGES];
+    int messageCount = 0;
+    char input[MAX_CHARS + 1];
+    int inputIndex = 0;
+
+    drawMessageBox();
+
+    while (1) {
+        if (kbhit()) {
+            char ch = getch();
+
+            if (ch == '\r') { // Enter key pressed
+                if (inputIndex > 0) {
+                    input[inputIndex] = '\0'; // Null-terminate the string
+                    strcpy(messages[messageCount].text, input);
+                    messages[messageCount].x = 50;
+                    messages[messageCount].y = 100 + messageCount * 30;
+                    ++messageCount;
+
+                    if (messageCount >= MAX_MESSAGES) {
+                        messageCount = MAX_MESSAGES - 1;
+                        for (int i = 0; i < MAX_MESSAGES - 1; ++i) {
+                            strcpy(messages[i].text, messages[i + 1].text);
+                            messages[i].x = messages[i + 1].x;
+                            messages[i].y = messages[i + 1].y;
+                        }
+                    }
+
+                    drawMessageBox();
+                    displayMessages(messages, messageCount);
+
+                    inputIndex = 0;
+                    memset(input, 0, sizeof(input));
+                }
+            } else if (ch == '\b') { // Backspace pressed
+                if (inputIndex > 0) {
+                    --inputIndex;
+                    input[inputIndex] = '\0';
+
+                    clearInputBox();
+                    outtextxy(190, 460, input);
+                    displayMessages(messages, messageCount);
+                }
+            } else { // Normal character input
+                if (inputIndex < MAX_CHARS) {
+                    input[inputIndex] = ch;
+                    ++inputIndex;
+                    input[inputIndex] = '\0';
+
+                    clearInputBox();
+                    outtextxy(190, 460, input);
+                    displayMessages(messages, messageCount);
+                }
+            }
+        }
+
+        if (ismouseclick(WM_LBUTTONDOWN)) {
+            int mx, my;
+            getmouseclick(WM_LBUTTONDOWN, mx, my);
+
+            if (mx > 450 && mx < 610 && my > 455 && my < 485) { // Send button
+                if (inputIndex > 0) {
+                    input[inputIndex] = '\0'; // Null-terminate the string
+                    strcpy(messages[messageCount].text, input);
+                    messages[messageCount].x = 50;
+                    messages[messageCount].y = 100 + messageCount * 30;
+                    ++messageCount;
+
+                    if (messageCount >= MAX_MESSAGES) {
+                        messageCount = MAX_MESSAGES - 1;
+                        for (int i = 0; i < MAX_MESSAGES - 1; ++i) {
+                            strcpy(messages[i].text, messages[i + 1].text);
+                            messages[i].x = messages[i + 1].x;
+                            messages[i].y = messages[i + 1].y;
+                        }
+                    }
+
+                    drawMessageBox();
+                    displayMessages(messages, messageCount);
+
+                    inputIndex = 0;
+                    memset(input, 0, sizeof(input));
+                }
+            } else if (mx > 450 && mx < 610 && my > 495 && my < 525) { // Clear button
+                inputIndex = 0;
+                memset(input, 0, sizeof(input));
+
+                drawMessageBox();
+                displayMessages(messages, messageCount);
+            }
+        }
+
+        delay(100); // Small delay to reduce CPU usage
+    }
+
+    closegraph();
+    return 0;
+}
